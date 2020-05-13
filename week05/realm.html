@@ -1,0 +1,215 @@
+<!--
+ * @Descripttion: 
+ * @Author: wyao
+ * @Date: 2020-05-10 13:08:59
+ * @LastEditors: wyao
+ * @LastEditTime: 2020-05-13 00:31:57
+ -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+</head>
+<body>
+
+<div id='container' style="width: 100%; height: 100%"></div>
+  
+</body>
+<script src="https://gw.alipayobjects.com/os/antv/pkg/_antv.g6-3.4.7/dist/g6.min.js"></script>
+<script>
+  let queue = [];
+  let set = new Set();
+  let chartData = {id: 'realm', children: []}
+  let objectsQueue = [
+    "eval",
+    "isFinite",
+    "isNaN",
+    "parseFloat",
+    "parseInt",
+    "decodeURI",
+    "decodeURIComponent",
+    "encodeURI",
+    "encodeURIComponent",
+    "Array",
+    "Date",
+    "RegExp",
+    "Promise",
+    "Proxy",
+    "Map",
+    "WeakMap",
+    "Set",
+    "WeakSet",
+    "Function",
+    "Boolean",
+    "String",
+    "Number",
+    "Symbol",
+    "Object",
+    "Error",
+    "EvalError",
+    "RangeError",
+    "ReferenceError",
+    "SyntaxError",
+    "TypeError",
+    "URIError",
+    "ArrayBuffer",
+    "SharedArrayBuffer",
+    "DataView",
+    "Float32Array",
+    "Float64Array",
+    "Int8Array",
+    "Int16Array",
+    "Int32Array",
+    "BigInt",
+    "BigInt64Array",
+    "Uint8Array",
+    "Uint16Array",
+    "Uint32Array",
+    "Uint8ClampedArray",
+    "Atomics",
+    "JSON",
+    "Math",
+    "Reflect",
+    "Intl",
+    "WebAssembly"
+  ];
+
+  // 创建带有path的realm对象集合
+  for(let i of objectsQueue){
+    queue.push({ path: [i],object: this[i] })
+    chartData.children.push({ id: i, children: []})
+  }
+
+  let chartQueue = [...chartData.children];
+  
+  // 循环队列
+  while(queue.length){
+    // 取出队列中的对象，若set中存在则跳出，否则添加到set中
+    const curr = queue.shift();
+    let chartCurr = chartQueue.shift();
+
+    if(set.has(curr.object)){
+      continue
+    }
+
+    set.add(curr.object)
+
+    // 遍历当前对象的所有Property
+    for(let p of Object.getOwnPropertyNames(curr.object)){
+      const property = Object.getOwnPropertyDescriptor(curr.object, p)
+      if(property.hasOwnProperty('value') 
+        && ((typeof property.value !== null) && ((typeof property.value === 'object') || (typeof property.value === 'function')))
+        && property.value instanceof Object){
+        const charProperty = {
+          id: p,
+          children: []
+        }
+        queue.push({
+          path: curr.path.concat([p]),
+          object: property.value
+        })
+        chartQueue.push(charProperty)
+        chartCurr.children.push(charProperty)
+      }
+
+      if(property.hasOwnProperty('get') && typeof property.value === 'function'){
+        const charProperty = {
+          id: p,
+          children: []
+        }
+        queue.push({
+          path: curr.path.concat([p]),
+          object: property.get
+        })
+        chartQueue.push(charProperty)
+        chartCurr.children.push(charProperty)
+      }
+
+      if(property.hasOwnProperty('set') && typeof property.value === 'function'){
+        const charProperty = {
+          id: p,
+          children: []
+        }
+        queue.push({
+          path: curr.path.concat([p]),
+          object: property.set
+        })
+        chartQueue.push(charProperty)
+        chartCurr.children.push(charProperty)
+      }
+    }
+  }
+
+  const width = document.getElementById('container').scrollWidth;
+  const height = document.getElementById('container').scrollHeight || 800;
+  const graph = new G6.TreeGraph({
+    container: 'container',
+    width,
+    height,
+    groupType: 'Rect',
+    modes: {
+      default: [
+        {
+          type: 'collapse-expand',
+          onChange: function onChange(item, collapsed) {
+            const data = item.get('model').data;
+            data.collapsed = collapsed;
+            return true;
+          },
+        },
+        'drag-canvas',
+        'zoom-canvas',
+      ],
+    },
+    defaultNode: {
+      size: 20,
+      labelCfg: {           // 标签配置属性
+        positions: 'center',// 标签的属性，标签在元素中的位置
+        style: {            // 包裹标签样式属性的字段 style 与标签其他属性在数据结构上并行
+          fontSize: 10      // 标签的样式属性，文字字体大小
+          // ...            // 标签的其他样式属性
+        }
+      },
+      anchorPoints: [
+        [0, 0.5],
+        [1, 0.5],
+      ],
+      style: {
+        fill: '#C6E5FF',
+        stroke: '#5B8FF9',
+      },
+    },
+    defaultEdge: {
+      type: 'cubic-horizontal',
+      style: {
+        stroke: '#A3B1BF',
+      },
+    },
+    layout: {
+      type: 'dendrogram',
+      direction: 'LR', // H / V / LR / RL / TB / BT
+      nodeSep: 30,
+      rankSep: 100,
+    },
+  });
+
+  graph.node(function(node) {
+    return {
+      label: node.id,
+      labelCfg: {
+        position: node.children && node.children.length > 0 ? 'left' : 'right',
+        offset: 5,
+      },
+    };
+  });
+
+  graph.data(chartData);
+  graph.render();
+  graph.fitView();
+  console.log(chartData)
+
+</script>
+</html>
