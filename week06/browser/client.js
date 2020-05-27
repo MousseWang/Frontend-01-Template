@@ -3,7 +3,7 @@
  * @Author: wyao
  * @Date: 2020-05-17 17:01:49
  * @LastEditors: wyao
- * @LastEditTime: 2020-05-20 02:05:43
+ * @LastEditTime: 2020-05-24 12:45:27
  */ 
 const parser = require('./parser');
 const net = require('net');
@@ -99,7 +99,6 @@ class ResponseParser{
 
   get response(){
     this.statusLine.match(/HTTP\/1.1 ([0-9]+) ([\s\S]+)/);
-    console.log(this.bodyParser.content)
     return {
       statusCode: RegExp.$1,
       statusText: RegExp.$2,
@@ -109,7 +108,6 @@ class ResponseParser{
   }
 
   receive(string){
-    console.log(string)
     for(let i = 0; i < string.length; i++){
       this.receiveChar(string.charAt(i))
     }
@@ -178,7 +176,6 @@ class TrunkedBodyParser{
 
   receiveChar(char){
     if(this.curr === this.WAITING_LENGTH){
-      console.log('-',char)
       if(char === '\r'){
         this.curr = this.WAITING_LENGTH_END;
         if(this.length === 0){
@@ -186,18 +183,24 @@ class TrunkedBodyParser{
         }
       }else{
         this.length *= 16;
-        this.length = parseInt(char,16);
+        this.length += parseInt(char,16);
       }
     }else if(this.curr === this.WAITING_LENGTH_END){
       if(char === '\n'){
         this.curr = this.READING_TRUNK;
       }
     }else if(this.curr === this.READING_TRUNK){
-      this.content.push(char)
-      this.length --;
-      if(this.length === 0){
-        this.curr = this.WAITING_NEW_LINE;
-      }
+      // if(char === '\n'){
+      //   this.curr = this.WAITING_LENGTH_END;
+      // }
+      // else{
+        this.content.push(char)
+        this.length --;
+        if(this.length === 0){
+          this.curr = this.WAITING_NEW_LINE;
+        }
+      // }
+      
     }else if(this.curr === this.WAITING_NEW_LINE){
       if(char === '\r'){
         this.curr = this.WAITING_NEW_LINE_END;
@@ -210,10 +213,6 @@ class TrunkedBodyParser{
   }
 
 }
-
-
-
-
 
 void async function(){
 
@@ -231,5 +230,5 @@ void async function(){
   })
 
   const res = await client.send();
-  parser.parseHTML(res)
+  parser.parseHTML(res.body)
 }();
