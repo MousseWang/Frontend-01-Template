@@ -3,7 +3,7 @@
  * @Author: wyao
  * @Date: 2020-05-20 00:58:35
  * @LastEditors: wyao
- * @LastEditTime: 2020-05-27 00:47:16
+ * @LastEditTime: 2020-05-28 01:40:09
  */ 
 module.exports.parseHTML = function parseHTML(html){
 
@@ -75,7 +75,7 @@ module.exports.parseHTML = function parseHTML(html){
     }else{
       emit({
         type: 'text',
-        context: char
+        content: char
       })
       return data;
     }
