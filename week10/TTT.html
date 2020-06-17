@@ -1,0 +1,210 @@
+<!--
+ * @Descripttion: 
+ * @Author: wyao
+ * @Date: 2020-06-13 19:14:26
+ * @LastEditors: wyao
+ * @LastEditTime: 2020-06-17 01:23:21
+--> 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+</head>
+<body>
+
+  <div class="board">
+    
+  </div>
+  
+</body>
+<script>
+
+  let color = 1;
+
+  let pattern = [
+    [0, 0, 0],
+    [0, 0, 0],
+    [0, 0, 0],
+  ]
+
+  function show(pattern){
+    let board = document.querySelector('.board')
+    board.innerHTML = ''
+    pattern.forEach((i, iIndex) => {
+      let row = document.createElement('div')
+      row.classList.add('row')
+      i.forEach((n, nIndex) => {
+        let item = document.createElement('div')
+        item.classList.add('item')
+        item.innerHTML = 
+          n === 2 ? '❌' : 
+          n === 1 ? '⭕️' : 
+          ''
+        item.addEventListener('click', function(){handleClick(iIndex, nIndex)})
+        row.appendChild(item)
+      })
+      board.appendChild(row)
+    })
+  }
+
+  function handleClick(i, n){
+    if(pattern[i][n] !== 0)
+      return
+    pattern[i][n] = color;
+    if(check(pattern, color)){
+      console.log(`winner is ${color === 2 ? '❌' : '⭕️'}`)
+    }else{
+      willWin(pattern, color)
+    }
+    color = 3 - color;
+    show(pattern)
+    computerMove()
+  }
+
+  function computerMove(){
+    const choice = bestChoice(pattern, color)
+    console.log(choice)
+    if(choice.point){
+      pattern[choice.point[1]][choice.point[0]] = color;
+    }
+    if(check(pattern, color)){
+      console.log(`winner is ${color === 2 ? '❌' : '⭕️'}`)
+    }
+    color = 3 - color;
+    show(pattern)
+  }
+
+  function willWin(pattern, color){
+    for(let i = 0; i < 3; i++){
+      for(let j = 0; j < 3; j++){
+        if(pattern[i][j]){
+          continue
+        }
+        let clonePattern = JSON.parse(JSON.stringify(pattern))
+        clonePattern[i][j] = color;
+        if(check(clonePattern, color)){
+          return [j, i]
+        }
+      }
+    }
+    return null
+  }
+
+  function check(pattern, color){
+
+    for(let i = 0; i < 3; i++){
+      let isWin = true;
+      for(let j = 0; j < 3; j++){
+        if(pattern[j][i] !== color){
+          isWin = false;
+          break;
+        }
+      }
+      if(isWin){
+        return true
+      }
+    }
+    
+    for(let i = 0; i < 3; i++){
+      let isWin = true;
+      for(let j = 0; j < 3; j++){
+        if(pattern[i][j] !== color){
+          isWin = false
+          break;
+        }
+      }
+      if(isWin){
+        return true
+      }
+    }
+
+    {
+      let isWin = true;
+      for(let j = 0; j < 3; j++){
+        if(pattern[j][j] !== color){
+          isWin = false
+        }
+      }
+      if(isWin){
+        return true
+      }
+    }
+
+    {
+      let isWin = true;
+      for(let j = 0; j < 3; j++){
+        if(pattern[j][2 - j] !== color){
+          isWin = false
+        }
+      }
+      if(isWin){
+        return true
+      }
+    }
+  }
+
+  let openings = new Map();
+  openings.set([
+    [0, 0, 0],
+    [0, 0, 0],
+    [0, 0, 0],
+  ].toString(), {
+    point: [1,1],
+    result:0
+  })
+
+  function bestChoice(pattern, color){
+
+    if(openings.has(pattern.toString())){
+      return openings.get(pattern.toString())
+    }
+
+    let point = willWin(pattern, color) 
+    if(point){
+      return {
+        point,
+        result: 1
+      }
+    }
+
+    let result = -1;
+
+    for(let i = 0; i < 3; i++){
+      for(let j = 0; j < 3; j++){
+        if(pattern[i][j]){
+          continue
+        }
+        let clonePattern = JSON.parse(JSON.stringify(pattern))
+        clonePattern[i][j] = color;
+        let opp = bestChoice(clonePattern, 3 - color)
+        if( - opp.result >= result){
+          point = [j, i]
+          result = opp.result === 0 ? 0 : - opp.result
+        }
+      }
+    }
+
+    return {
+      point,
+      result: point ? result : 0
+    }
+  }
+
+  show(pattern)
+</script>
+<style>
+  .row{
+    display: flex;
+    justify-content: flex-start;
+  }
+  .item{
+    width: 100px;
+    height: 100px;
+    margin: 3px;
+    background-color: lightblue;
+  }
+</style>
+</html>
