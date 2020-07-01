@@ -1,0 +1,68 @@
+<!--
+ * @Descripttion: 
+ * @Author: wyao
+ * @Date: 2020-07-01 06:11:49
+ * @LastEditors: wyao
+ * @LastEditTime: 2020-07-01 07:06:33
+--> 
+<script>
+  /*
+ * @Descripttion: 
+ * @Author: wyao
+ * @Date: 2020-07-01 06:11:49
+ * @LastEditors: wyao
+ * @LastEditTime: 2020-07-01 06:57:08
+ */ 
+
+class Trie{
+  constructor(){
+    this.root = Object.create(null)
+  }
+
+  insert(word){
+    let node = this.root;
+    for(let letter of word){
+      if(!node[letter]){
+        node[letter] = Object.create(null)
+      }
+      node = node[letter]
+    }
+    if(!node.$){
+      node.$ = 0
+    }
+    node.$++
+  }
+
+  most() {
+    let maxWord = '';
+    let max = 0;
+    function visit(node, word){
+      if(node.$ && node.$ > max){
+        max = node.$;
+        maxWord = word
+      }
+      for(let p in node){
+        visit(node[p], word + p)
+      }
+    }
+    visit(this.root, '')
+    console.log(max, maxWord)
+  }
+}
+
+function randomWord(length){
+  let s = '';
+  for (let i = 0; i < length; i++){
+    s += String.fromCharCode(Math.random() * 26 + 'a'.charCodeAt(0))
+  }
+  return s;
+}
+
+const trie = new Trie()
+for(let i = 0; i < 1000000; i++){
+  trie.insert(randomWord(4))
+}
+console.log(trie.root)
+trie.most()
+
+</script>

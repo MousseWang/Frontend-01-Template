@@ -1,0 +1,145 @@
+<!--
+ * @Descripttion: 
+ * @Author: wyao
+ * @Date: 2020-06-29 00:39:57
+ * @LastEditors: wyao
+ * @LastEditTime: 2020-06-30 01:37:59
+--> 
+<script>
+
+  const regexp = /([0-9\.]+)|([ ]+)|([\r\n]+)|(\+)|(\-)|(\*)|(\/)/g
+
+  const dictionary = ["Number", "Whitespace", "LineTerminator", "+", "-", "*", "/"]
+
+  function* tokenize(source){
+    var result = null;
+    var resultIndex = 0;
+
+    do{
+      lastIndex = regexp.lastIndex;
+      result = regexp.exec(source)
+
+      if(!result)
+        break
+
+      let token = {
+        type: null,
+        value: null
+      }
+
+      for(var i = 0; i < result.length; i++){
+        if(result[i + 1]){
+          token.type = dictionary[i]
+        }
+      }
+
+      token.value = result[0]
+
+      yield token
+
+    }while(result)
+
+    yield { type: 'EOF' }
+
+  }
+
+  function Expressin(src){
+    if(src[0].type === 'AdditiveExpressin' && src[1].type === 'EOF'){
+      let node = {
+        type: 'Expressin',
+        children: [src.shift(), src.shift()]
+      }
+      src.unshift(node)
+      return node
+    }
+    AdditiveExpressin(src)
+    return Expressin(src)
+  }
+
+  // 定义加法函数
+
+  function AdditiveExpressin(src){
+    console.log(src)
+    if(src[0].type === 'Number'){
+      MutiplicativeExpressin(src)
+      return AdditiveExpressin(src)
+    }
+    if(src[0].type === 'MutiplicativeExpressin'){
+      const node = {
+        type: 'AdditiveExpressin',
+        children: [src.shift()]
+      }
+      src.unshift(node);
+      return AdditiveExpressin(src)
+    }
+    if(src[0].type === 'AdditiveExpressin' && src.length > 1 && src[1].type === '+'){
+      const node = {
+        type: 'AdditiveExpressin',
+        children: [src.shift(), src.shift()]
+      }
+      MutiplicativeExpressin(src)
+      node.children.push(src.shift())
+      src.unshift(node)
+      return AdditiveExpressin(src)
+    }
+    if(src[0].type === 'AdditiveExpressin' && src.length > 1 && src[1].type === '-'){
+      const node = {
+        type: 'AdditiveExpressin',
+        children: [src.shift(), src.shift()]
+      }
+      MutiplicativeExpressin(src)
+      node.children.push(src.shift())
+      src.unshift(node)
+      return AdditiveExpressin(src)
+    }
+    if(src[0].type === 'AdditiveExpressin'){
+      return src[0]
+    }
+  }
+
+
+  // 定义乘法函数
+
+   function MutiplicativeExpressin(src){
+    if(src[0].type === 'Number'){
+      const node = {
+        type: 'MutiplicativeExpressin',
+        children: src.shift()
+      }
+      src.unshift(node)
+      console.log({...src[0]})
+      return MutiplicativeExpressin(src)
+    }
+    if(src[0].type === 'MutiplicativeExpressin' && src.length > 1 && src[1].type === '*'){
+      const node = {
+        type: 'MutiplicativeExpressin',
+        children: [src.shift(), src.shift(), src.shift()]
+      }
+      src.unshift(node)
+      console.log(src[0])
+      return MutiplicativeExpressin(src)
+    }
+    if(src[0].type === 'MutiplicativeExpressin' && src.length > 1 && src[1].type === '/'){
+      const node = {
+        type: 'MutiplicativeExpressin',
+        children: [src.shift(), src.shift(), src.shift()]
+      }
+      src.unshift(node)
+      console.log(src[0])
+      return MutiplicativeExpressin(src)
+    }
+    if(src[0].type === 'MutiplicativeExpressin')
+      return src[0]
+   }
+
+  let source = []
+
+  for(let token of tokenize('1 * 2 + 3 / 4')){
+    if(token.type !== 'Whitespace' && token.type !== 'LineTerminator')
+    source.push(token)
+  }
+  
+  console.log(Expressin(source))
+  
+
+</script>
