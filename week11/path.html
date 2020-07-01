@@ -1,0 +1,196 @@
+<!--
+ * @Descripttion: 
+ * @Author: wyao
+ * @Date: 2020-06-18 21:31:56
+ * @LastEditors: wyao
+ * @LastEditTime: 2020-06-27 23:54:45
+--> 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+</head>
+<body>
+  <div id='container'></div>
+  <button class='save'>save</button>
+  <button class='reset'>reset</button>
+</body>
+<script>
+
+  class Sorted{
+    constructor(data, compare){
+      this.data = data;
+      this.compare = compare;
+    }
+
+    take() {
+      if(!this.data.length)
+        return;
+      let min = this.data[0];
+      let minIndex = 0;
+      for(let i = 1; i < this.data.length; i ++){
+        if(this.compare(this.data[i], min) < 0){
+          min = this.data[i];
+          minIndex = i
+        }
+      }
+      this.data[minIndex] = this.data[this.data.length - 1];
+      this.data.pop();
+      return min;
+    }
+
+    insert(v) {
+      this.data.push(v)
+    }
+
+    get length(){
+      return this.data.length;
+    }
+  }
+
+  let map = JSON.parse(localStorage.getItem('pathMap')) || new Array(10000).fill(0);
+  let isPress = false;
+  let isCancel = false;
+  const container = document.querySelector('#container');
+  function show(map){
+    for(let y = 0; y < 100; y++){
+    for(let x = 0; x < 100; x++){
+      let cell = document.createElement('div')
+      cell.classList.add('cell')
+      map[y * 100 + x] === 1 && (cell.style.backgroundColor = '#333')
+      cell.addEventListener('mouseover', function(){
+        if(isPress){
+          cell.style.backgroundColor = '#333'
+          map[y * 100 + x] = 1
+          console.log(map)
+        }
+
+        if(isCancel){
+          cell.style.backgroundColor = '#999'
+          map[y * 100 + x] = 0
+          console.log(map)
+        }
+
+      })
+      container.appendChild(cell)
+    }
+  }
+  }
+  window.addEventListener('mousedown', function(e){
+    e.button === 0 ? isPress = true : isCancel = true
+  })
+  window.addEventListener('mouseup', function(e){
+    e.button === 0 ? isPress = false : isCancel = false
+  })
+
+  window.addEventListener('keydown', function(e){
+    if(e.keyCode === 67){
+      isCancel = true
+    }
+  })
+
+  window.addEventListener('keyup', function(e){
+    if(e.keyCode === 67){
+      isCancel = false
+    }
+  })
+
+  document.querySelector('.save').addEventListener('click', function(e){
+    localStorage.setItem('pathMap', JSON.stringify(map))
+  })
+
+  document.querySelector('.reset').addEventListener('click', function(e){
+    localStorage.removeItem('pathMap')
+    document.querySelector('#container').innerHTML = ''
+    show(map = JSON.parse(localStorage.getItem('pathMap')) || new Array(10000).fill(0))
+  })
+
+  window.addEventListener('contextmenu', e => e.preventDefault())
+
+  // 寻路函数
+  async function findPath( map, start, end ){
+    map = map.slice();
+    container.children[start[1] * 100 + start[0]].style.backgroundColor = 'red';
+    container.children[end[1] * 100 + end[0]].style.backgroundColor = 'red';
+    function distance([x, y]){
+      return (x - end[0]) ** 2 + (y - end[1]) ** 2
+    }
+
+    let collection = new Sorted([start], (a, b) => distance(a) - distance(b))
+    // let queue = [start];
+
+    function sleep(during){
+      return new Promise(resolve => {
+        setTimeout(function(){
+          resolve()
+        }, during)
+      })
+    }
+
+    // 将满足条件的坐标点插入栈中
+    async function insert([x, y], pre){
+      if(map[y * 100 + x] !== 0){
+        return
+      }
+
+      if(x < 0 || y < 0 || x >= 100 || y >= 100){
+        return
+      }
+      // 查找过标识
+      map[y * 100 + x] = pre;
+      container.children[y * 100 + x].style.backgroundColor = 'lightpink';
+      await sleep(1)
+      // 入栈
+      collection.insert([x, y])
+
+    }
+    // 广度优先
+    while(collection.length){
+      // 出栈
+      let [x, y] = collection.take();
+      if(end[0] === x && end[1] === y){
+        let path = [];
+        while(x !== start[0] || y !== start[1]){
+          path.push([x, y])
+          console.log([x, y])
+          container.children[y * 100 + x].style.backgroundColor = 'lightblue';
+          [x, y] = map[y * 100 + x]
+        }
+        return path
+      }
+      // 四周的点寻路判断
+
+      await insert([x + 1, y + 1], [x, y])
+      await insert([x - 1, y - 1], [x, y])
+      await insert([x + 1, y + 1], [x, y])
+      await insert([x - 1, y - 1], [x, y])
+      await insert([x, y + 1], [x, y])
+      await insert([x, y - 1], [x, y])
+      await insert([x + 1, y], [x, y])
+      await insert([x - 1, y], [x, y])
+    }
+
+    return null
+
+  }
+
+  show(map)
+</script>
+<style>
+  #container{
+    width: 401px;
+    line-height: 0;
+    display: flex;
+    flex-wrap: wrap;
+  }
+  .cell{
+    width: 4px;
+    height: 4px;
+    background-color: #999;
+    display: inline-block;
+  }
+</style>
+</html>
