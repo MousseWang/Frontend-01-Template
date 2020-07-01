@@ -3,7 +3,7 @@
  * @Author: wyao
  * @Date: 2020-07-02 00:17:35
  * @LastEditors: wyao
- * @LastEditTime: 2020-07-02 00:56:57
+ * @LastEditTime: 2020-07-02 01:19:53
 --> 
 
 <script>
@@ -29,22 +29,22 @@
     let lastIndex = 0;
 
     for(i = 0; pattern[i] !== '*'; i++){
-      if(source[i] !== pattern[i] && pattern[i] !== '?'){
+      if(pattern[i] !== source[i] && pattern[i] !== '?'){
           return false
         }
     }
 
-    i = lastIndex;
+    lastIndex = i
 
     for(let k = 0; k < startCount - 1; k++){
-      let subPattern = '';
       i++;
+      let subPattern = '';
       while(pattern[i] !== '*'){
         subPattern += pattern[i]
         i++;
       }
 
-      let reg = new RegExp(subPattern, replace(/\?/g, '[\\s\\S]'))
+      let reg = new RegExp(subPattern.replace(/\?/g, '[\\s\\S]'), "g")
       reg.lastIndex = lastIndex
       console.log(subPattern)
       lastIndex = reg.lastIndex
