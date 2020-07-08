@@ -1,6 +1,7 @@
 <script>
   let handlers = new Map();
   let usedReactivities = [];
+  let reactivities = new Map()
 
   let object = {
     a: 1,
@@ -23,7 +24,11 @@
   }
 
   function reactive(obj){
-    return new Proxy(obj, {
+    if(reactivities.has(obj)){
+      return reactivities.get(obj)
+    }
+
+    let proxy = new Proxy(obj, {
       get(obj, prop){
         usedReactivities.push([obj, prop])
         if(typeof obj[prop] === 'object')
@@ -31,7 +36,7 @@
         return obj[prop]
       },
       set(obj, prop, val){
-        obj[prop];
+        obj[prop] = val;
         if(handlers.get(obj)){
           if(handlers.get(obj).get(prop)){
             for(let handler of handlers.get(obj).get(prop)){
@@ -42,12 +47,15 @@
         return obj[prop]
       }
     })
+
+    reactivities.set(obj, proxy)
+    return proxy;
   }
 
   let proxy = reactive(object)
 
   let dummy;
-  effect(() => dummy = proxy.a)
-  proxy.a = 3
-  console.log(proxy)
+  effect(() => dummy = proxy.a.x)
+  proxy.a = {x:3}
+  console.log(dummy)
 </script>
