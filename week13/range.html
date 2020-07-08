@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <div id="container" style="width: 500px;;">文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!文字测试!</div>
+    <div id="square" style="background-color: lightcoral; width: 50px; height: 50px; display: inline-block;"></div>
+</body>
+<script>
+    let square = document.getElementById('square');
+    let container = document.getElementById('container');
+    let ranges = [];
+    let baseX = 0;
+    let baseY = 0;
+    square.addEventListener('mousedown', event => {
+        const startX = event.clientX;
+        const startY = event.clientY;
+        let up = event => {
+            document.removeEventListener('mouseup', up)
+            document.removeEventListener('mousemove', move)
+            baseX = baseX + event.clientX - startX
+            baseY = baseY + event.clientY - startY
+        }
+        let move = event => {
+            let range = nearest(event.clientX, event.clientY)
+            // square.style.transform = `translate(${baseX + event.clientX - startX}px, ${baseY + event.clientY - startY}px)`;
+            range.insertNode(square)
+        }
+        document.addEventListener('mouseup', up)
+        document.addEventListener('mousemove', move)
+    })
+
+    document.addEventListener('selectstart', event => event.preventDefault())
+
+    for(let i = 0; i < container.childNodes[0].textContent.length; i++){
+        let range = document.createRange();
+        range.setStart(container.childNodes[0], i)
+        range.setEnd(container.childNodes[0], i)
+        console.log(range)
+        ranges.push(range)
+    }
+
+    function nearest(x0, y0){
+        let nearestRange = null;
+        let distance = Infinity;
+        for(let range of ranges){
+            let {x, y} = range.getBoundingClientRect();
+            const d = (x0 - x) ** 2 +  (y0 - y) ** 2;
+            if(d < distance){
+                nearestRange = range;
+                distance = d
+            }
+        }
+        return nearestRange
+    }
+
+</script>
+</html>
