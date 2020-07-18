@@ -1,0 +1,75 @@
+<!--
+ * @Descripttion: 
+ * @Author: wyao
+ * @Date: 2020-07-04 15:28:44
+ * @LastEditors: wyao
+ * @LastEditTime: 2020-07-05 22:52:07
+--> 
+<script>
+  let obj = {
+    a: 1,
+    b: 2
+  }
+  let handles = new Map();
+  let reactivities = new Map();
+  let usedReactivities = [];
+
+  function reactive(object){
+    if(reactivities.has(object)){
+      return reactivities.get(object)
+    }
+    const proxy = new Proxy(object, {
+      get(object, prop){
+        usedReactivities.push([object, prop])
+        // 处理object赋值
+        if(typeof object[prop] === 'object')
+          return reactive(object[prop])
+        return object[prop]
+      },
+      set(object, prop, val){
+        object[prop] = val;
+        // 数据变化时执行映射栈
+        // for(let handle of handles){
+        //   handle()
+        // }
+        if(handles.get(object)){
+          if(handles.get(object).get(prop)){
+            for(let handle of handles.get(object).get(prop))
+              handle()
+          }
+        }
+        return object[prop]
+      }
+    })
+    reactivities.set(object, proxy)
+    return proxy
+  }
+
+  function effect(handle){
+    usedReactivities = [];
+    handle();
+    for( let usedReactivity of usedReactivities ){
+      let [object, prop] = usedReactivity;
+      if(!handles.has(object)){
+        handles.set(object, new Map())
+      }
+      if(!handles.get(object).has(prop)){
+        handles.get(object).set(prop, [])
+      }
+      handles.get(object).get(prop).push(handle)
+    }
+  }
+
+  let dummy;
+
+  let proxy = reactive(obj)
+
+  effect(() => dummy = proxy.a.a1)
+
+  console.log(dummy)
+  
+  proxy.a = {a1: 100}
+
+  console.log(dummy)
+
+</script>
