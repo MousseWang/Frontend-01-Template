@@ -18,11 +18,21 @@ export function create(Cls, attr, ...children){
         // attr !== prop
         o.setAttribute(name, attr[name])
     }
-    for(let child of children){
-        if(typeof child === "string")
-            child = new Text(child);
-        o.appendChild(child)
+
+    let visit = (children) => {
+        for(let child of children){
+            if(typeof child === "object" && child instanceof Array){
+                visit(child);
+                return;
+            }
+            if(typeof child === "string")
+                child = new Text(child);
+            o.appendChild(child)
+        }
     }
+
+    visit(children)
+    
     return o
 }
 
@@ -44,7 +54,16 @@ export class Wraper{
     }
 
     setAttribute(name, val){
+        debugger
         this.root.setAttribute(name, val)
+    }
+
+    addEventListener(){
+        this.root.addEventListener(...arguments);
+    }
+    
+    get style(){
+        return this.root.style;
     }
 
     appendChild(child){
