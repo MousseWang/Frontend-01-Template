@@ -1,0 +1,15 @@
+<html>
+  <body>
+    <div></div>
+  </body>
+</html>
+
+<script src='./index.js'></script>
+<script>
+  window.addEventListener('contextmenu', e => e.preventDefault())
+  enableGesture(document.body)
+
+  document.body.addEventListener('panstart', e => {
+    console.log(e)
+  })
+</script>
