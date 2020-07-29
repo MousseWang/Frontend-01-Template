@@ -42,8 +42,11 @@ export class Carousel{
 
       let children = this.data.map((item, currposition) => {
 
+          let lastPosition = (currposition - 1 + this.data.length) % this.data.length;
+          let nextPosition = (currposition + 1) % this.data.length;
+
           let offset = 0;
-          
+
           let onStart = () => {
             timeline.pause();
             clearTimeout(nextPicStopHandler)
@@ -55,8 +58,6 @@ export class Carousel{
           }
     
           let onPan = event => {
-            let lastPosition = (currposition - 1 + this.data.length) % this.data.length;
-            let nextPosition = (currposition + 1) % this.data.length;
 
             let lastElement = children[lastPosition]
             let currElement = children[currposition]
@@ -75,7 +76,34 @@ export class Carousel{
             console.log(currTransfronValue)
           }
 
-          let element = <img src={item} onStart={onStart} onPan={onPan} enableGesture={true} />;
+          let onPanend = event => {
+            let direction = 0
+            let dx = event. clientX - event. startX;
+            if(dx + offset > 250)
+            direction = 1;
+            else if(dx + offset < -250)
+            direction = -1
+
+            timeline.reset( );
+            timeline.start();
+
+            let lastElement = children[lastPosition];
+            let currentElement = children[currposition];
+            let nextElement = children[nextPosition];
+
+            let lastAnimation = new Animation( lastElement.style, "transform",- 500 - 500 * lastPosition + offset + dx, -500 - 500 * lastPosition + direction * 500, 500, 0, ease, v =>`translateX(${v}px)`);
+            let currentAnimation = new Animation( currentElement. style, "transform", - 500 * currposition + offset + dx, - 500 * currposition + direction * 500, 500, 0, ease, v =>`translateX(${v}px)` );
+            let nextAnimation = new Animation( nextElement.style, "transform", 500 - 500 * nextPosition + offset + dx, 500 - 500 * nextPosition + direction * 500, 500, 0, ease, v =>`translateX(${v}px)`);
+            
+            timeline.add(lastAnimation) ;
+            timeline.add(currentAnimation);
+            timeline.add(nextAnimation);
+
+            position = (position - direction + this. data.length) % this.data.length;
+            nextPicStopHandler = setTimeout(nextImg, 3000);
+          }
+
+          let element = <img src={item} onStart={onStart} onPan={onPan} onPanend={onPanend} enableGesture={true} />;
           element.style.transform = 'translateX(0px)'
           element.addEventListener("dragstart", event => event.preventDefault())
           return element
