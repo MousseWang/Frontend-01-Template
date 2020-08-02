@@ -79,6 +79,9 @@ export class Carousel{
           let onPanend = event => {
             let direction = 0
             let dx = event. clientX - event. startX;
+
+            console.log(event)
+            debugger
             if(dx + offset > 250)
             direction = 1;
             else if(dx + offset < -250)

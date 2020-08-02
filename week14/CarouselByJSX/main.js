@@ -16,7 +16,6 @@ class Carousel{
     }
 
     setAttribute(name, val){
-        debugger
         this.root.setAttribute(name, val)
     }
 
