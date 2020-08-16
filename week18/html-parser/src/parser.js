@@ -1,7 +1,7 @@
 let currentToken = null;
 let currentAttribute = null;
 
-let stack = [{type: "document", children:[]}];
+let stack;
 let currentTextNode = null;
 
 function emit(token){
@@ -82,9 +82,13 @@ function tagOpen(c){
     } else {
         emit({
             type: "text",
+            content : '<'
+        });
+        emit({
+            type: "text",
             content : c
         });
-        return ;
+        return data;
     }
 }
 
@@ -139,14 +143,13 @@ function attributeName(c) {
 
 
 function beforeAttributeValue(c) {
-    if(c.match(/^[\t\n\f ]$/) || c == "/" || c == ">" || c == EOF) {
+    // 删除了对于/和>的判断，修复了遇到 data =会报错的问题。同时也让UnquotedAttributeValue中的/和>判断可以运行
+    if(c == EOF || c.match(/^[\t\n\f ]$/)) {
         return beforeAttributeValue;
     } else if(c == "\"") {
         return doubleQuotedAttributeValue;
     } else if(c == "\'") {
         return singleQuotedAttributeValue;
-    } else if(c == ">") {
-        //return data;
     } else {
         return UnquotedAttributeValue(c);
     }
@@ -177,7 +180,7 @@ function singleQuotedAttributeValue(c) {
         
     } else {
         currentAttribute.value += c;
-        return doubleQuotedAttributeValue
+        return singleQuotedAttributeValue
     }
 }
 
@@ -192,9 +195,9 @@ function afterQuotedAttributeValue (c){
         return data;
     } else if(c == EOF) {
         
-    } else {
-        currentAttribute.value += c;
-        return doubleQuotedAttributeValue
+    } else { // 属性在引号结束之后，直接跟随属性名，导致属性名被误认为是上一个属性的值的问题。
+        currentAttribute = { name: "", value: "" }
+        return attributeName(c);
     }
 }
 
@@ -224,28 +227,34 @@ function UnquotedAttributeValue(c) {
 }
 
 function selfClosingStartTag(c){
-    if( c == ">") {
+    if(c == EOF) {
+
+    } else if( c == ">") {
         currentToken.isSelfClosing = true;
         emit(currentToken);
         return data;
-    } else if(c == "EOF") {
-
     } else {
         
     }
 }
 
 function endTagOpen(c){
-    if(c.match(/^[a-zA-Z]$/)) {
+    if(c == EOF) {
+          
+    } else if(c.match(/^[a-zA-Z]$/)) {
         currentToken = {
             type: "endTag",
             tagName : ""
         }
         return tagName(c);
-    } else if(c == ">") {
-
-    } else if(c == EOF) {
-        
+    } else if (c == ">") { // 此处处理了空标签
+        currentToken = {
+            type: "startTag",
+            tagName : "",
+            isSelfClosing: true
+        }
+        emit(currentToken);
+        return data;
     } else {
 
     }
@@ -272,11 +281,7 @@ function scriptDataLessThanSign(c){
             type:"text",
             content:"<"
         });
-        emit({
-            type:"text",
-            content:c
-        });
-        return scriptData;
+        return scriptData(c);
     }
 }
 //in script received </
@@ -294,11 +299,7 @@ function scriptDataEndTagOpen(c){
             content:"/"
         });
 
-        emit({
-            type:"text",
-            content:"c"
-        });
-        return scriptData;
+        return scriptData(c);
     }
 }
 //in script received </s
@@ -310,11 +311,7 @@ function scriptDataEndTagNameS(c){
             type:"text",
             content:"</s"
         });
-        emit({
-            type:"text",
-            content:c
-        });
-        return scriptData;
+        return scriptData(c);
     }
 }
 
@@ -327,11 +324,7 @@ function scriptDataEndTagNameC(c){
             type:"text",
             content:"</sc"
         });
-        emit({
-            type:"text",
-            content:c
-        });
-        return scriptData;
+        return scriptData(c);
     }
 }
 
@@ -344,11 +337,7 @@ function scriptDataEndTagNameR(c){
             type:"text",
             content:"</scr"
         });
-        emit({
-            type:"text",
-            content:c
-        });
-        return scriptData;
+        return scriptData(c);
     }
 }
 //in script received </scri
@@ -360,11 +349,7 @@ function scriptDataEndTagNameI(c){
             type:"text",
             content:"</scri"
         });
-        emit({
-            type:"text",
-            content:c
-        });
-        return scriptData;
+        return scriptData(c);
     }
 }
 //in script received </scrip
@@ -376,16 +361,14 @@ function scriptDataEndTagNameP(c){
             type:"text",
             content:"</scrip"
         });
-        emit({
-            type:"text",
-            content:c
-        });
-        return scriptData;
+        return scriptData(c);
     }
 }
 //in script received </script
+let spaces = 0
 function scriptDataEndTag(c){
     if(c == " ") {
+        spaces++;
         return scriptDataEndTag;
     } if(c == ">") {
         emit({
@@ -396,20 +379,23 @@ function scriptDataEndTag(c){
     } else {
         emit({
             type:"text",
-            content:"</script"
+            content:"</script" + new Array(spaces).fill(' ').join('')
         });
-        emit({
-            type:"text",
-            content:c
-        });
-        return scriptData;
+        return scriptData(c);
     }
 }
 
 function afterAttributeName(c) {
     if(c.match(/^[\t\n\f ]$/)) {
         return afterAttributeName;
-    } else if(c == "/") {
+    } else if (c == "/") { // 修复了遇到自封闭标签时，属性未被添加到元素上的问题。
+        if (currentAttribute && currentAttribute.name) {
+          currentToken[currentAttribute.name] = currentAttribute.value;
+          currentAttribute = {
+              name : "",
+              value : ""
+          };
+        }
         return selfClosingStartTag;
     } else if(c == "=") {
         return beforeAttributeValue;
@@ -430,13 +416,20 @@ function afterAttributeName(c) {
 }
 
 export function parseHTML(html){
+// export function parseHTML(html){
     let state = data;
-    for(let c of html) {
+    stack = [{type: "document", children:[]}];
+    for (let c of html) {
         state = state(c);
         if(stack[stack.length - 1].tagName === "script" && state == data) {
             state = scriptData;
         }
     }
     state = state(EOF);
+    // 多次调用parseHTML时，需要重置全局变量，否则当前attributes会受到之前的缓存影响
+    currentToken = null;
+    currentAttribute = null;
+    currentTextNode = null;
+
     return stack[0];
 }
